@@ -4,9 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node ./src/index.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "boxen": "^6.2.1",
+    "center-align": "^1.0.1",
+    "clear": "^0.1.0",
+    "colorette": "^2.0.16",
+    "figlet": "^1.5.2",
+    "inquirer": "^8.2.0"
+  },
+  "devDependencies": {
+    "dotenv": "^11.0.0"
+  }
 }
