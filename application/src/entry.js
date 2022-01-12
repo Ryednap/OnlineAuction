@@ -1,10 +1,13 @@
 'use-strict';
 
+const fs = require('fs');
+const path = require('path');
+const sleep = require('sleep');
 const inquirer = require('inquirer');
 const colorette = require('colorette');
 const clear = require('clear');
-const http = require('http');
-const fs = require('fs');
+const postRequest = require('../api/apiReq');
+const main = require('./main');
 
 const siginQuestion = [
     {
@@ -41,46 +44,46 @@ const signupQuestion = [
     }
 ];
 
+
+
 async function Signin() {
     clear();
     console.log(
         colorette.greenBright('Please Enter your credentials\n')
     );
     const answer = await inquirer.prompt(siginQuestion);
-
-    // create data to be posted to the server
-    const postData = JSON.stringify(answer);
-    const requestOption = {
-        host: 'localhost',
-        port: 3000,
-        path: '/entry/api/login',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(postData)
-        }
-    };
-
-
-    // create HTTP request to the server
-    const req = http.request(requestOption, (res) => {
-        console.log(`Status : ${res.statusCode}`);
-
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            console.log(chunk);
+    const req = await postRequest(answer, "/entry/api/login");
+    const res = await req.json();
+    if (req.status != 200) {
+        console.log("\n", res);
+        setTimeout(() => Signin(), 2000);
+    } else {
+        const filePath = path.resolve(process.cwd(), "data", "secret.bin");
+        const bufferData = Buffer.from(res['token'], 'base64');
+        fs.writeFile(filePath, bufferData, async (err) => {
+            if (err) console.log(`Error saving file: ${err}`);
+            sleep.sleep(2);
         });
-    });
-    req.on('error', (err) => {
-        console.log(err);
-    });
-    req.write(postData);
-    req.end();
-    console.log(answer);
+        
+    }
+
 }
 
 async function Signup() {
     clear();
+    console.log(
+        colorette.greenBright('Please Enter Details (case applied)\n')
+    );
+    const answer = await inquirer.prompt(signupQuestion);
+    const req = await postRequest(answer, "/entry/api/register");
+    const res = await req.json();
+    if (req.status != 200) {
+        console.log("\n", res);
+        setTimeout(() => Signup(), 2000);
+    } else {
+        console.log(res);
+        main();
+    }
 }
 
 module.exports = { Signin, Signup };

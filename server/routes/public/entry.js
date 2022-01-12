@@ -24,7 +24,7 @@ router.post('/api/register', async (req, res) => {
     if (error) {
         res.status(400).json({
             message: 'Bad Request',
-            error: error
+            error: error.message
         });
         return;
     }
@@ -54,14 +54,14 @@ router.post('/api/register', async (req, res) => {
             console.log('Error  creating user data')
             res.status(500).json({
                 message: 'Internal Error Creating User',
-                error: err
+                error: err.message
             })
         });
 
     }).catch((err) => {
         res.status(500).json({
             message: 'Internal Error validating User details',
-            error: err
+            error: err.message
         });
     });
 });
@@ -80,7 +80,7 @@ router.post('/api/login', async (req, res) => {
     if (error) {
         res.status(400).json({
             message: 'Bad Request',
-            error: error
+            error: error.message
         });
         return;
     }
@@ -113,7 +113,7 @@ router.post('/api/login', async (req, res) => {
         console.log(err);
         res.status(500).json({
             message: 'Internal error',
-            error: err
+            error: err.message
         })
     });
 });
