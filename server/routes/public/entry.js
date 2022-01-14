@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const { loginValidation, registerValidation } = require('../../utils/validation');
-const User = require('../../models/user');
+const User = require('../../models/user_model');
 const router = express.Router({ caseSensitive: true, strict: false });
 
 

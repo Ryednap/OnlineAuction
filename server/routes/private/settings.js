@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 
-const User = require('../../models/user');
+const User = require('../../models/user_model');
 const { settingPatchValidation } = require('../../utils/validation');
 const { validateToken } = require('../../middleware/auth');
 
