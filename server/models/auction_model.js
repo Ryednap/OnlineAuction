@@ -44,11 +44,11 @@ const auctionSchema = mongoose.Schema({
 
 const auctionHistorySchema = mongoose.Schema({
     auctionId: {
-        type: auctionSchema._id,
+        type: mongoose.Schema.Types.ObjectId,
         required: true
     },
     transactionId: {
-        type: transactionHistory._id,
+        type: mongoose.Schema.Types.ObjectId,
         required: true
     }
 });

@@ -5,7 +5,7 @@ const inquirer = require('inquirer');
 const term = require('terminal-kit').terminal;
 const colorette = require('colorette');
 const clear = require('clear');
-const postRequest = require('../api/apiReq');
+const { postRequest } = require('../api/apiReq');
 const main = require('./main');
 
 const siginQuestion = [
@@ -63,8 +63,9 @@ async function Signin() {
         console.log("\n", res);
         setTimeout(() => Signin(), 2000);
     } else {
+        console.log(res['token']);
         const filePath = path.resolve(process.cwd(), "data", "secret.bin");
-        const bufferData = Buffer.from(res['token'], 'base64');
+        const bufferData = Buffer.from(res['token'], 'utf-8');
         fs.writeFile(filePath, bufferData, async (err) => {
             if (err) console.log(`Error saving file: ${err}`);
             sleep.sleep(2);

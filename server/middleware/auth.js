@@ -10,10 +10,12 @@ function validateToken(req, res, next) {
     }
     try {
         const decoded = jwt.verify(token, process.env.TOKEN_KEY);
+        console.log(jwt.decoded);
         req.user = decoded;
-
+        
     } catch (err) {
-        res.status(500).json({
+        console.log(err);
+        return res.status(500).json({
             message: 'Error validating user',
             error: err
         });

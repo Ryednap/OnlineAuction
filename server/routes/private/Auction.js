@@ -1,23 +1,20 @@
 'use strict';
 
 const express = require('express');
-const mongoose = require('mongoose');
 const crypto = require('crypto');
 const moment = require('moment');
 
-const validateToken = require('../../middleware/auth');
 const { auctionModel } = require('../../models/auction_model');
 const auctionRouter = express.Router();
 
-auctionRouter.get('/list', validateToken, (req, res) => {
+auctionRouter.get('/list', (req, res) => {
     auctionModel.find({}).then((docs) => {
         let auctionList = new Array();
         docs.forEach((doc) => {
-            delete doc.itemListing
+            delete doc['_doc'].itemListing;
             auctionList.push(doc);
         });
-        console.log(auctionList);
-        res.status(200).json(JSON.stringify(auctionList));
+        res.status(200).json(auctionList);
 
     }).catch((err) => {
         console.log(err);
@@ -28,7 +25,7 @@ auctionRouter.get('/list', validateToken, (req, res) => {
     });
 });
 
-auctionRouter.get('/list:auctionId', validateToken, (req, res) => {
+auctionRouter.get('/list/:auctionId', (req, res) => {
     const auctionId = req.params.auctionId;
     auctionModel.findOne({ _id: auctionId }).then((doc) => {
         res.status(200).json(doc);
@@ -46,9 +43,21 @@ auctionRouter.post('/api/add', (req, res) => {
     const auctionDoc = {
         _id: id,
         name: req.body.name,
-        startsAt: moment()
-    }
-    auctionModel.create(auctionObject)
-})
+        startsAt: moment(req.startsAt).format('YYYY-MM-DD HH::MM:SS'),
+        endsAt: moment(req.endsAt).format('YYYY-MM-DD HH::MM:SS'),
+        auctionCharge: req.body.charge,
+        itemListing: []
+    };
+    auctionModel.create(auctionDoc).then((status) => {
+        console.log(status);
+        res.status(200).json({});
+    }).catch((error) => {
+        console.log(error);
+        res.status(500).json({
+            message: 'Internal Server error',
+            error: err
+        });
+    });
+});
 
 module.exports = auctionRouter;

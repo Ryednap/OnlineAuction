@@ -75,6 +75,7 @@ router.post('/api/login', async (req, res) => {
         role: req.body.role
     };
 
+    console.log(userDetails);
     // Verify the details pattern
     const { error } = await loginValidation(userDetails);
     if (error) {
