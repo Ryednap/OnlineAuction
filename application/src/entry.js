@@ -3,7 +3,6 @@ const path = require('path');
 const sleep = require('sleep');
 const inquirer = require('inquirer');
 const term = require('terminal-kit').terminal;
-const colorette = require('colorette');
 const clear = require('clear');
 const { postRequest } = require('../api/apiReq');
 const main = require('./main');
@@ -59,7 +58,7 @@ async function Signin() {
     const answer = await inquirer.prompt(siginQuestion);
     const req = await postRequest(answer, "/entry/api/login");
     const res = await req.json();
-    if (req.status != 200) {
+    if (req.status !== 200) {
         console.log("\n", res);
         setTimeout(() => Signin(), 2000);
     } else {
@@ -88,12 +87,12 @@ async function Signup() {
     const answer = await inquirer.prompt(signupQuestion);
     const req = await postRequest(answer, "/entry/api/register");
     const res = await req.json();
-    if (req.status != 200) {
+    if (req.status !== 200) {
         console.log("\n", res);
         setTimeout(() => Signup(), 2000);
     } else {
         console.log(res);
-        main();
+        await main();
     }
 }
 
