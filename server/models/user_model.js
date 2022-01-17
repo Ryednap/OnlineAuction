@@ -30,8 +30,7 @@ userSchema.statics.assertUnique = async function (user) {
     try {
         const userNameQuery = await mongoose.model('UserModel').findOne({ userName: user.userName });
         const emailQuery = await mongoose.model('UserModel').findOne({ email: user.email });
-        if (userNameQuery || emailQuery) return false;
-        return true;
+        return !(userNameQuery || emailQuery);
 
     } catch (err) {
         throw new Error(err.message);

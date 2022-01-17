@@ -25,7 +25,7 @@ const postRequest = async (data, endpoint) => {
 const getRequest = async (endpoint) => {
     try {
         const filePath = path.resolve(process.cwd(), "data", "secret.bin");
-        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MWUzZDMwNTU2ZmM5OWNmNGIxNDk3NTgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE2NDIzMzQ5NzIsImV4cCI6MTY0MjQyMTM3Mn0.FWxqwkHb8Rfs3upLiZ5lxxgWbUVW08-h2-6M9A2qbaU';
+        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MWUzZDMwNTU2ZmM5OWNmNGIxNDk3NTgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE2NDI0MjU4MzcsImV4cCI6MTY0MjUxMjIzN30.dC7EmuI1Y6AuzeoD9v9zXcPn-F9KH_JIvPDHB-NaXhg';
         const options = {
             method: 'GET',
             headers: {

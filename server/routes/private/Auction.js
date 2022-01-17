@@ -9,7 +9,7 @@ const auctionRouter = express.Router();
 
 auctionRouter.get('/list', (req, res) => {
     auctionModel.find({}).then((docs) => {
-        let auctionList = new Array();
+        let auctionList = [];
         docs.forEach((doc) => {
             delete doc['_doc'].itemListing;
             auctionList.push(doc);
@@ -27,7 +27,9 @@ auctionRouter.get('/list', (req, res) => {
 
 auctionRouter.get('/list/:auctionId', (req, res) => {
     const auctionId = req.params.auctionId;
+    console.log(auctionId);
     auctionModel.findOne({ _id: auctionId }).then((doc) => {
+        console.log(doc);
         res.status(200).json(doc);
     }).catch((err) => {
         console.log(err);
@@ -55,7 +57,7 @@ auctionRouter.post('/api/add', (req, res) => {
         console.log(error);
         res.status(500).json({
             message: 'Internal Server error',
-            error: err
+            error: error
         });
     });
 });

@@ -22,6 +22,7 @@ class Home {
             const data = await getRequest('/auction/list');
             if (data.status !== 200) {
                 this.destroy();
+                console.log(await data.json());
                 process.exit(1);
             }
             const auctionList = await data.json();
@@ -67,38 +68,42 @@ class Home {
             firstRowTextAttr: { color: 'red' },
             firstColumnTextAttr: { color: 'magenta' },
         });
-
-        // todo: ERROR HERE FIND A WAY TO CLOSE THIS EVENT IF ANSWER IS NOT REACHED
-        this.#promptEvent = inquirer.prompt({
-            type: 'list',
-            name: 'auctionOption',
-            message: colorette.bold(colorette.red('Please select Id of the auction to enter.\n\n')),
-            choices: questionChoices
-        }).then((answer) => {
-            const which = answer['auctionOption'];
-            console.log(answer, which);
-            if (which === 'Exit') {
-                this.destroy();
-                main();
-            }
-            const id = which.split(':')[0].trim();
-            // TODO : add check for expiry of auction
-            this.destroy();
-            const auction = new Auction(id);
-            auction.start();
-        }).catch((error) => {
-            console.log(error);
-        });
+        if (!this.#promptEvent && this.#promptEvent.ui.activePrompt.status !== 'answered') {
+            this.#promptEvent = inquirer.prompt({
+                type: 'list',
+                name: 'auctionOption',
+                message: colorette.bold(colorette.red('Please select Id of the auction to enter.\n\n')),
+                choices: questionChoices
+            });
+        }
     }
 
     async render() {
         const tableInterval = setInterval(async () => {
             // to avoid event Listener stacking problem clear the previous event
-            if (this.#promptEvent) this.#promptEvent.ui.close();
+            if (this.#promptEvent && this.#promptEvent.ui.activePrompt.status !== 'answered')
+                this.#promptEvent.ui.close();
             await this.renderCallback();
         }, 15000);
 
-        this.#intervalStack.push(tableInterval);
+        const answerInterval = setInterval(() => {
+            if (this.#promptEvent && this.#promptEvent.ui.activePrompt.status === 'answered') {
+                const answer = this.#promptEvent.ui.activePrompt.answers;
+                console.log(answer);
+                this.#promptEvent.ui.close();
+                this.destroy();
+                const which = answer['auctionOption'];
+                if (which === 'Exit') {
+                    main();
+                }
+                const id = which.split(':')[0].trim();
+                // TODO : add check for expiry of auction
+                const auction = new Auction(id);
+                auction.start();
+            }
+        }, 1000);
+
+        this.#intervalStack.push(tableInterval, answerInterval);
     }
     start() {
         this.render();
@@ -109,5 +114,4 @@ class Home {
     }
 }
 
-const ob = new Home();
-ob.start();
+module.exports = Home;
