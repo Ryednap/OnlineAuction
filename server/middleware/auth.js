@@ -1,5 +1,14 @@
 const jwt = require('jsonwebtoken');
 
+
+function validateTokenWS(token) {
+    try {
+        return jwt.verify(token, process.env.TOKEN_KEY);
+    } catch (error) {
+        throw error;
+    }
+}
+
 function validateToken(req, res, next) {
     const token = req.body.token || req.headers['x-access-token'];
     if (!token) {
@@ -9,9 +18,7 @@ function validateToken(req, res, next) {
         });
     }
     try {
-        const decoded = jwt.verify(token, process.env.TOKEN_KEY);
-        console.log(jwt.decoded);
-        req.user = decoded;
+        req.user = jwt.verify(token, process.env.TOKEN_KEY);
         
     } catch (err) {
         console.log(err);
@@ -23,4 +30,4 @@ function validateToken(req, res, next) {
     next();
 }
 
-module.exports = { validateToken };
+module.exports = { validateToken, validateTokenWS};

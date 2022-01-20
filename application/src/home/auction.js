@@ -4,15 +4,26 @@ const term = require('terminal-kit').terminal;
 const clear = require('clear');
 const centerAlign = require('center-align');
 const colorette = require('colorette');
+const clientIo = require('socket.io-client');
 
 class Auction {
     #id;
     #auctionData;
     #intervalStack;
+    #socket;
 
     constructor(id) {
         this.#id = id;
         this.#intervalStack = [];
+        console.log('Inside constructor');
+        this.#socket = clientIo('http://localhost:3000/auction', {
+            auth: {token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MWUzZDMwNTU2ZmM5OWNmNGIxNDk3NTgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE2NDI2NTk5NjQsImV4cCI6MTY0Mjc0NjM2NH0.H8rTjEaxXTIZVhZ-T7z8d4ptOpxwjQW8g952LxVFX8A'},
+            transports: ['websocket']
+        });
+        this.#socket.on('connect', () => {
+            console.log('connected to server');
+        })
+        this.#socket.on('connect_error', message => console.log(message));
     }
     #beforeStartCallBack () {
         const loopInterval = setInterval(() => {
@@ -61,6 +72,4 @@ class Auction {
 }
 
 let auction = new Auction('3cced460ce2a15c820d843585a82');
-auction.start();
-
 module.exports = Auction;

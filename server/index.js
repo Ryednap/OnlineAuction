@@ -1,6 +1,7 @@
 const http = require('http');
 const mongoose = require('mongoose');
 const app = require('./routes/app');
+const WebSocket = require('./websockets/webSocket');
 
 const password = process.env.MONGO_PASSWORD;
 const dbName = process.env.MONGO_DB
@@ -12,7 +13,9 @@ mongoose.connect("mongodb+srv://Ryednap:" + password + "@authcluster.xesir.mongo
 
 const server = http.createServer(app);
 const port = process.env.PORT || 5000;
+const wbSocket = new WebSocket(server);
 
+wbSocket.start();
 server.listen(port, () => {
     console.log(`Server is up and running at Port ${port}`);
 });
