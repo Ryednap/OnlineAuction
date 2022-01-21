@@ -1,3 +1,5 @@
+'use strict';
+
 const { Server } = require('socket.io');
 const { instrument} = require('@socket.io/admin-ui');
 const { validateTokenWS } = require('../middleware/auth');

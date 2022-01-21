@@ -1,3 +1,5 @@
+'use strict';
+
 const mongoose = require('mongoose');
 
 const transactionHistory = mongoose.Schema({
@@ -47,10 +49,9 @@ const auctionHistorySchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },
-    transactionId: {
+    transactionId: [{
         type: mongoose.Schema.Types.ObjectId,
-        required: true
-    }
+    }]
 });
 
 
@@ -58,4 +59,4 @@ auctionModel = mongoose.model('auction', auctionSchema);
 auctionHistoryModel = mongoose.model('auctionHistory', auctionHistorySchema);
 transactionHistoryModel = mongoose.model('transactionHistory', transactionHistory);
 
-module.exports = { auctionModel, auctionHistoryModel, transactionHistory };
+module.exports = { auctionModel, auctionHistoryModel, transactionHistoryModel };
