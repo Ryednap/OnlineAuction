@@ -10,11 +10,13 @@ const settingRoute = require('./private/settings');
 const auctionRoute = require('./private/Auction');
 const itemRoute = require('./private/Item');
 const { validateToken } = require('../middleware/auth');
+const testRouter = require("./testRouter");
 
 app.use(morgan('combined'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+app.use('/test', testRouter);
 app.use('/entry', authRouter);
 app.use('/home', settingRoute);
 app.use('/auction', validateToken, auctionRoute);

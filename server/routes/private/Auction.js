@@ -27,7 +27,6 @@ auctionRouter.get('/list', (req, res) => {
 
 auctionRouter.get('/list/:auctionId', (req, res) => {
     const auctionId = req.params.auctionId;
-    console.log(auctionId);
     auctionModel.findOne({ _id: auctionId }).then((doc) => {
         console.log(doc);
         res.status(200).json(doc);
@@ -45,8 +44,8 @@ auctionRouter.post('/api/add', async (req, res) => {
     const auctionDoc = {
         _id: id,
         name: req.body.name,
-        startsAt: moment(req.startsAt).format('YYYY-MM-DD:HH::MM:SS'),
-        endsAt: moment(req.endsAt).format('YYYY-MM-DD:HH::MM:SS'),
+        startsAt: moment(req.startsAt).format('YYYY-MM-DD HH::MM:SS'),
+        endsAt: moment(req.endsAt).format('YYYY-MM-DD HH::MM:SS'),
         auctionCharge: req.body.charge,
         itemListing: []
     };
@@ -65,7 +64,7 @@ auctionRouter.post('/api/add', async (req, res) => {
                 $lte: moment(req.startsAt).toDate(),
             }
         });
-        if (lhs || rhs) {
+        if (lhs.length || rhs.length) {
             return res.status(400).json({
                 message: 'Schedule class : One auction already scheduled during the period'
             });

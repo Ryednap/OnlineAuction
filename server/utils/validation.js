@@ -1,5 +1,7 @@
 const Joi = require('joi');
-
+/**
+ * @type {Joi.ObjectSchema<any>}
+ */
 const registerSchema = Joi.object({
     userName: Joi.string()
         .alphanum()
@@ -19,6 +21,10 @@ const registerSchema = Joi.object({
         .required()
 });
 
+/**
+ *
+ * @type {Joi.ObjectSchema<any>}
+ */
 const loginSchema = Joi.object({
     userName: Joi.string()
         .alphanum()
@@ -34,6 +40,10 @@ const loginSchema = Joi.object({
         .required()
 });
 
+/**
+ *
+ * @type {Joi.ObjectSchema<any>}
+ */
 const settingPatchSchema = Joi.object({
     userName: Joi.string()
         .alphanum()
@@ -49,15 +59,30 @@ const settingPatchSchema = Joi.object({
     role: Joi.string()
 });
 
+/**
+ *
+ * @param user
+ * @returns {Promise<{error: undefined, warning?: Joi.ValidationError, value: *}|{error: Joi.ValidationError, warning?: Joi.ValidationError, value: undefined}>}
+ */
 async function registerValidation(user) {
     return { error, value } = registerSchema.validate(user);
 
 }
 
+/**
+ *
+ * @param user
+ * @returns {Promise<{error: undefined, warning?: Joi.ValidationError, value: *}|{error: Joi.ValidationError, warning?: Joi.ValidationError, value: undefined}>}
+ */
 async function loginValidation(user) {
     return { error, value } = loginSchema.validate(user);
 }
 
+/**
+ *
+ * @param data
+ * @returns {Promise<{error: undefined, warning?: Joi.ValidationError, value: *}|{error: Joi.ValidationError, warning?: Joi.ValidationError, value: undefined}>}
+ */
 async function settingPatchValidation(data) {
     return { error, value } = settingPatchSchema.validate(data);
 }

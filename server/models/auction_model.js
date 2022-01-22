@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const transactionHistory = mongoose.Schema({
     seller: mongoose.Schema.Types.ObjectId,
     buyer: mongoose.Schema.Types.ObjectId,
+    itemId: mongoose.Schema.Types.ObjectId,
     sellPrice: Number,
     auctionCharge: {
         type: Number,
@@ -13,7 +14,7 @@ const transactionHistory = mongoose.Schema({
     paidToUser: {
         type: Number,
         default: function () {
-            return this.sellPrice * (1 - this.auctionCharge);
+            return this.sellPrice * (1 - this.auctionCharge * 0.01);
         }
     },
 });
@@ -46,7 +47,7 @@ const auctionSchema = mongoose.Schema({
 
 const auctionHistorySchema = mongoose.Schema({
     auctionId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         required: true
     },
     transactionId: [{
@@ -55,8 +56,8 @@ const auctionHistorySchema = mongoose.Schema({
 });
 
 
-auctionModel = mongoose.model('auction', auctionSchema);
-auctionHistoryModel = mongoose.model('auctionHistory', auctionHistorySchema);
-transactionHistoryModel = mongoose.model('transactionHistory', transactionHistory);
+let auctionModel = mongoose.model('auction', auctionSchema);
+let auctionHistoryModel = mongoose.model('auctionHistory', auctionHistorySchema);
+let transactionHistoryModel = mongoose.model('transactionHistory', transactionHistory);
 
 module.exports = { auctionModel, auctionHistoryModel, transactionHistoryModel };

@@ -6,7 +6,24 @@ const {itemModel, userItemRelationModel} = require('../../models/item_model');
 const {auctionModel} = require('../../models/auction_model');
 const itemRouter = express.Router({caseSensitive: true, strict: true});
 
+/**
+ * [Add new item to the list]
+ * @required [Header Body]
+ * req.body.name : itemName
+ * req.body.type: type of item
+ * req.body.description: description for the item
+ * basePrice: base price for item
+ * minSalePrice: [optional] minimum sale price for the item
+ * auctionId: id of the auction to post the listing
+ *
+ * Verified
+ */
+
 itemRouter.post('/api/add', async (req, res) => {
+    /**
+     * @type {{name, minSalePrice: (number|{default: number, type: Number | NumberConstructor}|*),
+     * description, type, basePrice: ({default: number, type: Number | NumberConstructor}|*)}}
+     */
     const itemDoc = {
         name: req.body.name,
         type: req.body.type,
@@ -17,6 +34,10 @@ itemRouter.post('/api/add', async (req, res) => {
 
     itemModel.create(itemDoc).then((doc) => {
         const id = doc._id;
+        /**
+         * [Add the created Item in the user-Item relation model]
+         * @type {{itemId: mongoose.ObjectId, originalOwner: boolean, userId: mongoose.ObjectId}}
+         */
         const userItemRelationDoc = {
             userId: req.user._id,
             itemId: id,
@@ -24,6 +45,9 @@ itemRouter.post('/api/add', async (req, res) => {
         };
         userItemRelationModel.create(userItemRelationDoc).then(r => {
             const auctionId = req.body.auctionId;
+            /**
+             * [Now insert the created Item into the auction for the ID provided in request body]
+             */
             auctionModel.findOneAndUpdate(
                 {_id: auctionId},
                 {$addToSet: {
