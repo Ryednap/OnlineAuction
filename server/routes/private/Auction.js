@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const moment = require('moment');
 
 const { auctionModel } = require('../../models/auction_model');
+const {auctionScheduler} = require('../../cron/auctionScheduler');
 const auctionRouter = express.Router();
 
 auctionRouter.get('/list', (req, res) => {
@@ -76,7 +77,11 @@ auctionRouter.post('/api/add', async (req, res) => {
         });
     }
     auctionModel.create(auctionDoc).then((status) => {
-        console.log(status);
+        auctionScheduler.scheduleAuction({
+            id: auctionDoc._id,
+            startsAt: auctionDoc.startsAt,
+            endsAt: auctionDoc.endsAt
+        });
         res.status(200).json({});
     }).catch((error) => {
         console.log(error);

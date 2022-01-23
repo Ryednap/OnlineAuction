@@ -2,8 +2,7 @@ const express = require('express');
 const testRouter = express.Router();
 
 
-const AuctionScheduler = require('../cron/auctionScheduler');
-const auction = new AuctionScheduler();
+const auction = require('../cron/auctionScheduler');
 const moment = require('moment');
 
 testRouter.get('/', (req, res) => {;

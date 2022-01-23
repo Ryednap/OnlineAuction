@@ -15,7 +15,7 @@ const {
 const { itemModel, userItemRelationModel } = require('../models/item_model');
 const {parseCron} = require("../utils/utils");
 
-const emitter = new EventEmitter();
+const auctionEmitter = new EventEmitter();
 
 class Auction {
     #id;
@@ -119,7 +119,7 @@ class Auction {
     #timerRun () {
         console.log(this.#timer);
         this.#timer-=10;
-        if (this.#timer <= 0) emitter.emit('next-item');
+        if (this.#timer <= 0) auctionEmitter.emit('next-item');
     }
 
 
@@ -128,15 +128,15 @@ class Auction {
        // assert (moment().isAfter(this.#auctionData.startsAt) && moment().isBefore(this.#auctionData.endsAt));
 
         let timerJob = cron.scheduleJob('* * * * * *', () => {this.#timerRun();});
-        emitter.on('bid', (userBidData) => {
+        auctionEmitter.on('bid', (userBidData) => {
             console.log(`Received Bid ${userBidData}`);
             this.#timer = 30;
             if (this.#currentBid.currentPrice > userBidData.currentPrice) {
-                emitter.emit('bid-error', 'Bid Price less than current Price');
+                auctionEmitter.emit('bid-error', 'Bid Price less than current Price');
             }
             this.#currentBid = userBidData;
         });
-        emitter.on('next-item', () => {
+        auctionEmitter.on('next-item', () => {
             console.log('posting next item');
             timerJob.cancel();
             this.#timer = 30;
@@ -167,7 +167,7 @@ class Auction {
                         currentPrice: this.#currentItemPosting.basePrice,
                     };
                     timerJob = cron.scheduleJob('* * * * * *', () => {this.#timerRun();});
-                    emitter.emit('item-listed');
+                    auctionEmitter.emit('item-listed');
                 }, 1000);
             } else {
                 this.destroy();
@@ -175,7 +175,7 @@ class Auction {
         });
 
         // to Fire the event once
-        emitter.emit('next-item');
+        auctionEmitter.emit('next-item');
     }
 
     /**
@@ -183,8 +183,8 @@ class Auction {
      * @emits 'On-complete'
      */
     destroy () {
-        emitter.removeAllListeners('bid').removeAllListeners('next-event');
-        emitter.emit('On-complete');
+        auctionEmitter.removeAllListeners('bid').removeAllListeners('next-event');
+        auctionEmitter.emit('On-complete');
         console.log('Auction complete');
     }
 
@@ -195,10 +195,19 @@ class Auction {
  * @type {AuctionScheduler}
  *
  */
-module.exports = class AuctionScheduler {
+class AuctionScheduler {
     #jobList;
+    #currentJobId;
+    #currentAuctionObject;
     constructor() {
         this.#jobList = [];
+        this.#currentJobId = undefined;
+        this.#currentAuctionObject = undefined;
+
+        auctionEmitter.on('On-complete', () => {
+           this.#currentAuctionObject = undefined;
+           this.#currentJobId = undefined;
+        });
     }
 
     #runAuction (id) {
@@ -210,8 +219,9 @@ module.exports = class AuctionScheduler {
                     this.#jobList.splice(i, 1);
                 }
             }
+            this.#currentJobId = id;
             console.log(`Running Auction ${id}`);
-            new Auction(id);
+            this.#currentAuctionObject = new Auction(id);
             sleep.sleep(3);
         } catch (error) {
             console.log('Caught Exception in running auction');
@@ -227,9 +237,24 @@ module.exports = class AuctionScheduler {
         });
         const jobObject = {
             id : scheduleTime.id,
+            detail: scheduleTime,
             job: job
         };
         this.#jobList.push(jobObject);
-        return emitter;
     }
+
+    getScheduledAuctionDetail (id) {
+        this.#jobList.forEach(job => {
+            if (job.id === id) {
+                return job.detail;
+            }
+        });
+        return {};
+    }
+
+    get jobId () { return this.#currentJobId; }
+    get currentAuction () { return this.#currentAuctionObject; }
 }
+
+let auctionScheduler = new AuctionScheduler();
+module.exports = {auctionScheduler, auctionEmitter};
