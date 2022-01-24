@@ -1,12 +1,17 @@
+'use strict';
+
+// library import
 const term = require('terminal-kit').terminal;
 const inquirer = require('inquirer');
 const clear = require('clear');
 const colorette = require('colorette');
-const { getRequest } = require('../../api/apiReq');
-const main = require('../main');
-const Auction = require('./auction');
 
-class Home {
+// module import
+const { getRequest } = require('../../api/apiReq');
+const mainMenu = require('../home/mainMenu');
+const auctionClient = require('./auctionClient');
+
+class AuctionMenu {
     #intervalStack;
     #serverData;
     #mutex;
@@ -22,7 +27,7 @@ class Home {
             const data = await getRequest('/auction/list');
             if (data.status !== 200) {
                 this.destroy();
-                console.log(await data.json());
+                console.log(`Error: ${await data.json()}`);
                 process.exit(1);
             }
             const auctionList = await data.json();
@@ -68,7 +73,7 @@ class Home {
             firstRowTextAttr: { color: 'red' },
             firstColumnTextAttr: { color: 'magenta' },
         });
-        if (!this.#promptEvent && this.#promptEvent.ui.activePrompt.status !== 'answered') {
+        if (!this.#promptEvent || this.#promptEvent.ui.activePrompt.status !== 'answered') {
             this.#promptEvent = inquirer.prompt({
                 type: 'list',
                 name: 'auctionOption',
@@ -84,7 +89,7 @@ class Home {
             if (this.#promptEvent && this.#promptEvent.ui.activePrompt.status !== 'answered')
                 this.#promptEvent.ui.close();
             await this.renderCallback();
-        }, 15000);
+        }, 5000);
 
         const answerInterval = setInterval(() => {
             if (this.#promptEvent && this.#promptEvent.ui.activePrompt.status === 'answered') {
@@ -94,11 +99,11 @@ class Home {
                 this.destroy();
                 const which = answer['auctionOption'];
                 if (which === 'Exit') {
-                    main();
+                    mainMenu();
                 }
                 const id = which.split(':')[0].trim();
                 // TODO : add check for expiry of auction
-                const auction = new Auction(id);
+                const auction = new auctionClient(id);
                 auction.start();
             }
         }, 1000);
@@ -114,4 +119,4 @@ class Home {
     }
 }
 
-module.exports = Home;
+module.exports = AuctionMenu;

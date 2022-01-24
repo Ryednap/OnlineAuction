@@ -6,9 +6,9 @@ const centerAlign = require('center-align');
 const colorette = require('colorette');
 const clientIo = require('socket.io-client');
 const figlet = require("figlet");
-const {readCache} = require('../../cache');
+const {readCache} = require('../../utils/cache');
 
-class Auction {
+class AuctionClient {
     #id;
     #userInfo;
     #auctionData;
@@ -227,6 +227,4 @@ class Auction {
     }
 }
 
-
-test();
-module.exports = Auction;
+module.exports = AuctionClient;

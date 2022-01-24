@@ -119,4 +119,17 @@ router.post('/api/login', async (req, res) => {
     });
 });
 
+router.get('/api/detail/:userName', (req, res) => {
+    const userName = req.params.userName;
+    User.findOne({userName: userName}).then(r => {
+        return res.status(200).json(r);
+    }).catch(err => {
+        console.log(err);
+        return res.status(500).json({
+            message: 'Internal Database error',
+            error: err.message
+        });
+    })
+})
+
 module.exports = router;

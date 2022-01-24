@@ -1,4 +1,4 @@
-'use-strict';
+'use strict';
 
 const inquirer = require('inquirer');
 const colorette = require('colorette');
@@ -37,8 +37,7 @@ async function frontPageDrawer() {
             centerAlign(colorette.redBright('Sell More, Buy Better!!\n\n\n'), 95)
         );
 
-        const answer = await inquirer.prompt(question);
-        return answer;
+        return await inquirer.prompt(question);
 
     } catch (error) {
         console.log(error);

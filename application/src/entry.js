@@ -1,19 +1,24 @@
-const fs = require('fs');
-const path = require('path');
-const sleep = require('sleep');
+'use strict';
+
+// Library import
 const inquirer = require('inquirer');
 const term = require('terminal-kit').terminal;
 const clear = require('clear');
-const { postRequest } = require('../api/apiReq');
-const main = require('./main');
 
-const siginQuestion = [
+// Module import
+const { postRequest, getRequest} = require('../api/apiReq');
+const { writeCacheData } = require('../utils/cache');
+const main = require('./main');
+const mainMenu = require('./home/mainMenu');
+const ProgressBar = require('../utils/progressBar');
+
+const signinQuestion = [
     {
         type: 'input',
         name: 'userName'
     },
     {
-        type: 'input',
+        type: 'password',
         name: 'password'
     },
     {
@@ -32,7 +37,7 @@ const signupQuestion = [
         name: 'email'
     },
     {
-        type: 'input',
+        type: 'password',
         name: 'password'
     },
     {
@@ -55,21 +60,27 @@ async function Signin() {
             style: term.brightMagenta.bold
         }
     );
-    const answer = await inquirer.prompt(siginQuestion);
+    const answer = await inquirer.prompt(signinQuestion);
     const req = await postRequest(answer, "/entry/api/login");
     const res = await req.json();
+
+    const userReq = await getRequest("/entry/api/detail/" + answer.userName, false);
+    const userRes = await userReq.json();
     if (req.status !== 200) {
         console.log("\n", res);
         setTimeout(() => Signin(), 2000);
     } else {
-        console.log(res['token']);
-        const filePath = path.resolve(process.cwd(), "data", "secret.bin");
-        const bufferData = Buffer.from(res['token'], 'utf-8');
-        fs.writeFile(filePath, bufferData, async (err) => {
-            if (err) console.log(`Error saving file: ${err}`);
-            sleep.sleep(2);
+        writeCacheData("token", res['token']);
+        writeCacheData("user", userRes);
+        const progressBar = new ProgressBar(mainMenu);
+        progressBar.run({
+            width: 100,
+            title: '\n\n\t\tLOADING\t\t',
+            eta: true,
+            percent: true,
+            titleStyle: term.bold.brightRed,
+            barStyle: term.brightGreen
         });
-
     }
 
 }
@@ -91,7 +102,6 @@ async function Signup() {
         console.log("\n", res);
         setTimeout(() => Signup(), 2000);
     } else {
-        console.log(res);
         await main();
     }
 }

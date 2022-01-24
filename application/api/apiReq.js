@@ -1,8 +1,7 @@
 'use strict';
 
 const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
+const {readCacheData} = require("../utils/cache");
 
 const postRequest = async (data, endpoint) => {
     try {
@@ -22,10 +21,10 @@ const postRequest = async (data, endpoint) => {
     }
 }
 
-const getRequest = async (endpoint) => {
+const getRequest = async (endpoint, privateEndpoint = true) => {
     try {
-        const filePath = path.resolve(process.cwd(), "data", "secret.bin");
-        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MWUzZDMwNTU2ZmM5OWNmNGIxNDk3NTgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE2NDI1NzU5MjYsImV4cCI6MTY0MjY2MjMyNn0.0OCXO-BbOIsT-ecCpljQoOQDae6T-MzXwGmQtUqWCaE';
+        let token = '';
+        if (privateEndpoint) token = readCacheData("token");
         const options = {
             method: 'GET',
             headers: {
