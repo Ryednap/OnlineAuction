@@ -6,18 +6,30 @@ const centerAlign = require('center-align');
 const colorette = require('colorette');
 const clientIo = require('socket.io-client');
 const figlet = require("figlet");
+const {readCache} = require('../../cache');
 
 class Auction {
     #id;
+    #userInfo;
     #auctionData;
     #intervalStack;
     #socket;
+    #serverAuctionTimer;
+    #bidPrompt;
+
     progress = 0;
     progressBar;
-    #serverAuctionTimer;
+    state;
+    auctionStatus;
 
     constructor(id) {
         this.#id = id;
+        readCache('user.bin').then(r => {
+            this.#userInfo = r;
+        }).catch(err => {
+            console.log(err);
+            process.exit(1);
+        });
         getRequest("/auction/list/" + id).then(r => {
             this.#auctionData = r;
         }).catch(error => {
@@ -42,6 +54,69 @@ class Auction {
                 console.log(`Connection closed Reason : ${reason}`);
             });
         });
+    }
+
+    run () {
+        clear();
+        this.#serverAuctionTimer = this.auctionStatus.timer;
+        const runInterval = setInterval (() => {
+            const data = figlet.textSync(this.#auctionData.name, {
+                font: 'Standard',
+                horizontalLayout: 'fitted',
+                verticalLayout: 'full',
+                whitespaceBreak: true,
+            });
+            console.log(centerAlign(
+                colorette.bold(colorette.blueBright(data + "\n\n")),
+                80
+            ));
+
+            console.log(centerAlign(
+                colorette.bold(colorette.magentaBright(this.state.currentItemPosting.name + '\n'))
+            , 80));
+            console.log(centerAlign(
+                colorette.italic(colorette.greenBright(this.state.currentItemPosting.description + '\n'))
+            ), 80);
+            console.log(centerAlign(
+                colorette.redBright('Base Price:  ') +
+                colorette.greenBright(this.state.state.basePrice)
+            ), 80);
+            console.log(centerAlign(
+                colorette.redBright('Current Price:  ') +
+                colorette.greenBright((this.state.highestBid.currentPrice))
+            ), 80);
+            console.log(centerAlign(
+                colorette.redBright('Highest Bidder   ') +
+                colorette.greenBright(this.state.highestBid.userName)
+            ), 80);
+            console.log(centerAlign(
+                colorette.bold(colorette.yellowBright(this.#serverAuctionTimer--))
+            ));
+
+            if (this.#bidPrompt && this.#bidPrompt.ui.activePrompt.status === 'answered') {
+                const answer = this.#bidPrompt.ui.activePrompt.answers;
+                if (answer['option'] === 'bid') {
+                    this.#socket.emit('bid', {
+                        userId: this.#userInfo.id,
+                        userName: this.#userInfo.name,
+                        currentPrice: this.state.highestBid.currentPrice + 50.0
+                    });
+                } else {
+                    this.#destroy();
+                    // TODO go back instead of process close
+                    process.exit(1);
+                }
+            }
+            if (this.#bidPrompt) this.#bidPrompt.ui.close();
+            this.#bidPrompt= inquirer.prompt({type: 'list', name: 'option', message: ' ', choices: ['bid', 'quit']});
+        }, 1000);
+
+        this.#socket.on('update', (state) => {
+            this.#serverAuctionTimer = state.timer;
+            this.state = state;
+        });
+
+        this.#intervalStack.push(runInterval);
     }
 
     wait () {
@@ -71,6 +146,9 @@ class Auction {
             );
         }, 1000);
         this.#intervalStack.push(waitInterval);
+        this.#socket.once('update', () => {
+            clearInterval(waitInterval);
+        });
     }
 
     #doDummyProgress() {
@@ -78,7 +156,8 @@ class Auction {
         this.progressBar.update(this.progress);
         if (this.progress >= 1) {
             setTimeout(() => {
-                term('\n');this.wait();
+                term('\n');
+                this.auctionStatus === 'PEND' ? this.wait() : this.run();
             }, 200)
         } else {
             setTimeout(this.#doDummyProgress, 100 + Math.random() * 400);
@@ -86,29 +165,9 @@ class Auction {
     }
     main () {
         this.#socket.emit('join-room', this.#id, async (res) => {
-            if (res.status === 'OK') {
-                // status ok auction is running
-
-            } else if (res.status === 'PEND') {
-                clear();
-                await term.slowTyping('Wait for Auction to Begin', {
-                    flashStyle: term.brightRed,
-                    delay: 100,
-                    style: term.brightYellow
-                });
-
-                clear();
-                this.progressBar = term.progressBar({
-                    width: 80,
-                    title: 'Loading data.....',
-                    eta: true,
-                    percent: true,
-                    titleStyle: term.bold.brightMagenta,
-                    percentStyle: term.brightYellow
-                });
-                this.#doDummyProgress();
-
-            } else {
+            this.auctionStatus = res.status;
+            this.state = res.state;
+            if (this.auctionStatus === 'NOK') {
                 // status NOK auction has ended
                 clear();
                 await term.slowTyping('Sorry The auction has ended !!!', {
@@ -140,6 +199,18 @@ class Auction {
 
                 }, 1000);
                 this.#intervalStack.push(timerInterval);
+
+            } else {
+                clear();
+                this.progressBar = term.progressBar({
+                    width: 80,
+                    title: 'Loading data.....',
+                    eta: true,
+                    percent: true,
+                    titleStyle: term.bold.brightMagenta,
+                    percentStyle: term.brightYellow
+                });
+                this.#doDummyProgress();
             }
         });
 
@@ -156,35 +227,6 @@ class Auction {
     }
 }
 
-
-
-async function test() {
-    const waitInterval = setInterval(() => {
-        clear();
-        const data = figlet.textSync('Hello World', {
-            font: 'Standard',
-            horizontalLayout: 'fitted',
-            verticalLayout: 'full',
-            whitespaceBreak: true,
-        });
-        console.log(centerAlign(
-            colorette.bold(colorette.blueBright(data + "\n\n")),
-            60
-        ));
-        process.stdout.write(
-            colorette.bold(colorette.magentaBright('\tCurrent Time\t\t\t'))
-        );
-        process.stdout.write(
-            colorette.bold(colorette.magentaBright('Scheduled Time\n\n'))
-        );
-        process.stdout.write(
-            colorette.yellowBright('\t' + new Date().toLocaleString() + '\t\t')
-        );
-        process.stdout.write(
-            colorette.yellowBright(new Date().toLocaleString() + '\n')
-        );
-    }, 1000);
-}
 
 test();
 module.exports = Auction;
