@@ -8,10 +8,12 @@ module.exports = class ProgressBar {
     #callback;
     #progress;
     #progressBar;
+    returnValue;
     constructor(callback) {
         this.#callback = callback;
         this.#progress = 0;
         this.doProgress = this.doProgress.bind(this);
+        this.returnValue = undefined;
     }
 
     doProgress () {
@@ -20,7 +22,7 @@ module.exports = class ProgressBar {
         if (this.#progress >= 1) {
             setTimeout(() => {
                 sleep.sleep(1);
-                this.#callback();
+                this.returnValue = this.#callback();
             }, 1000);
         } else {
             setTimeout(this.doProgress, 100 + Math.random() * 500);
@@ -29,6 +31,6 @@ module.exports = class ProgressBar {
 
     run (progressStyle) {
         this.#progressBar = term.progressBar(progressStyle);
-        this.doProgress();
+        return this.doProgress();
     }
 }

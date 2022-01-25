@@ -1,26 +1,29 @@
 'use strict';
 
+/**
+ * TODO: current scene is that we can't navigate bac
+ * Implement a functionality to do so
+ */
+
 // library import
 const term = require('terminal-kit').terminal;
 const inquirer = require('inquirer');
 const clear = require('clear');
 const colorette = require('colorette');
+const moment = require('moment');
 
 // module import
 const { getRequest } = require('../../api/apiReq');
-const mainMenu = require('../home/mainMenu');
 const auctionClient = require('./auctionClient');
 
 class AuctionMenu {
     #intervalStack;
     #serverData;
-    #mutex;
     #promptEvent;
 
     constructor() {
         this.#intervalStack = [];
         this.#serverData = [];
-        this.#mutex = false;
         this.#promptEvent = undefined;
 
         const requestInterval = setInterval(async () => {
@@ -32,16 +35,11 @@ class AuctionMenu {
             }
             const auctionList = await data.json();
 
-            // wait for mutex to free
-            while (this.#mutex) {}
-            // acquire the mutex lock
-            this.#mutex = true;
             this.#serverData = [];
             Object.keys(auctionList).forEach(indices => {
                 this.#serverData.push(auctionList[indices]);
             });
-            // release the lock
-            this.#mutex = false;
+
         }, 5000);
         this.#intervalStack.push(requestInterval);
     }
@@ -51,18 +49,20 @@ class AuctionMenu {
         clear();
         let table = [], questionChoices = [];
         table.push(['ID', 'Name', 'Starts', 'End']);
-        while (this.#mutex) {}
-        this.#mutex = true;
+
         // deep copy for array of objects
         const localServerDataReference = JSON.parse(JSON.stringify(this.#serverData));
-        this.#mutex = false;
+
 
         localServerDataReference.forEach((doc) => {
             questionChoices.push(`${doc._id} : ${doc.name}`);
-            table.push(Object.values(doc));
+            doc.startsAt = moment(doc.startsAt).format('YYYY-MM-DD hh:mm:ss');
+            doc.endsAt = moment(doc.endsAt).format('YYYY-MM-DD hh:mm:ss');
+            const ar = Object.values(doc);
+            ar.pop(); ar.pop();
+            table.push(ar);
         });
         questionChoices.push('Exit');
-
         await term.table(table, {
             hasBorder: true,
             contentHasMarkup: true,
@@ -94,17 +94,16 @@ class AuctionMenu {
         const answerInterval = setInterval(() => {
             if (this.#promptEvent && this.#promptEvent.ui.activePrompt.status === 'answered') {
                 const answer = this.#promptEvent.ui.activePrompt.answers;
-                console.log(answer);
                 this.#promptEvent.ui.close();
                 this.destroy();
                 const which = answer['auctionOption'];
                 if (which === 'Exit') {
-                    mainMenu();
+                    process.exit(0);
                 }
                 const id = which.split(':')[0].trim();
                 // TODO : add check for expiry of auction
                 const auction = new auctionClient(id);
-                auction.start();
+                auction.main();
             }
         }, 1000);
 

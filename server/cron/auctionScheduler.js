@@ -210,6 +210,9 @@ class AuctionScheduler {
         });
     }
 
+    get jobId () { return this.#currentJobId; }
+    get currentAuction () { return this.#currentAuctionObject; }
+
     #runAuction (id) {
         try {
             for (let i = 0; i < this.#jobList.length; ++i) {
@@ -244,16 +247,17 @@ class AuctionScheduler {
     }
 
     getScheduledAuctionDetail (id) {
+        console.log(`length : ${this.#jobList.length} given Id : ${id}`);
+        let jobDetail = {};
         this.#jobList.forEach(job => {
-            if (job.id === id) {
-                return job.detail;
+            console.log(job.id);
+            if (job.id.toString() === id) {
+                console.log('FOUND\n');
+                jobDetail = job.detail;
             }
         });
-        return {};
+        return jobDetail;
     }
-
-    get jobId () { return this.#currentJobId; }
-    get currentAuction () { return this.#currentAuctionObject; }
 }
 
 let auctionScheduler = new AuctionScheduler();

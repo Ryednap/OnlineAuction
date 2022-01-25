@@ -11,6 +11,7 @@ const clear = require('clear');
 // Module import
 const AuctionMenu = require('../auction/auctionMenu');
 const ProgressBar = require('../../utils/progressBar');
+const Settings = require('../settings/setting');
 
 const question = {
     type: 'list',
@@ -30,13 +31,14 @@ function runApp(classObject) {
             titleStyle: term.bold.brightMagenta,
             barStyle: term.brightCyan
         });
+
     } catch (error) {
         console.log(error);
         process.exit(1);
     }
 }
 
-async function mainMenu() {
+async function mainMenu(runTitle = true) {
     clear();
     const data = figlet.textSync('WELCOME --!', {
         font: 'Standard',
@@ -45,17 +47,19 @@ async function mainMenu() {
         whitespaceBreak: true,
 
     });
-    // console.log(colorette.bold(colorette.yellowBright(data)));
-    await term.slowTyping(data + "\n\n", {
-        delay: 10,
-        style: term.bold.brightYellow
-    });
+   if (runTitle) {
+       await term.slowTyping(data + "\n\n", {
+           delay: 10,
+           style: term.bold.brightYellow
+       });
+   } else console.log(colorette.bold(colorette.yellowBright(data + '\n\n')));
+
     const answer = await inquirer.prompt(question);
     switch (answer['option']) {
         case "Auction": runApp(new AuctionMenu()); break;
         case "Your Items": console.log("Your Items"); break;
         case "Transaction History": console.log("history"); break;
-        case "Settings": console.log("setting"); break;
+        case "Settings": runApp(new Settings()); break;
         case "Exit" : process.exit(0); break;
         default: console.log("Something Went wrong");
     }

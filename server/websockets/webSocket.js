@@ -42,25 +42,25 @@ module.exports = class WebSocket {
                     socket.join(id);
                     console.log(`User : ${socket.id} joined the room`);
                     console.log(`Currently running rooms : ${socket.rooms}`);
-                    if (auctionScheduler.jobId() === id) {
+                    if (auctionScheduler.jobId === id) {
                         // auction is Running
-                        const auctionOb = auctionScheduler.currentAuction();
+                        const auctionOb = auctionScheduler.currentAuction;
                         assert (auctionOb);
                         sleep.sleep(5); // wait for 5 seconds
                         callback({
                             status: 'OK',
                             state: {
-                                currentItemPosting: auctionOb.currentItemPosting(),
-                                timer: auctionOb.timer(),
-                                highestBid: auctionOb.highestBid()
+                                currentItemPosting: auctionOb.currentItem,
+                                timer: auctionOb.currentTimer,
+                                highestBid: auctionOb.highestBid,
                             }
                         });
 
                         auctionEmitter.on('item-listed', () => {
                             this.#io.to(id).emit('update', {
-                                currentItemPosting: auctionOb.currentItemPosting(),
-                                timer: auctionOb.timer(),
-                                highestBid: auctionOb.highestBid()
+                                currentItemPosting: auctionOb.currentItem,
+                                timer: auctionOb.currentTimer,
+                                highestBid: auctionOb.highestBid
                             });
                         });
 
@@ -74,14 +74,15 @@ module.exports = class WebSocket {
                             // wait for some time
                             sleep.sleep(5);
                             this.#io.to(id).emit('update', {
-                                currentItemPosting: auctionOb.currentItemPosting(),
-                                timer: auctionOb.timer(),
-                                highestBid: auctionOb.highestBid()
+                                currentItemPosting: auctionOb.currentItem,
+                                timer: auctionOb.currentTimer,
+                                highestBid: auctionOb.highestBid
                             });
                         });
                     } else {
                         // either not running or over
                         const jobDetail = auctionScheduler.getScheduledAuctionDetail(id);
+                        console.log(jobDetail);
                         // Auction is over
                         if (Object.keys(jobDetail).length === 0) {
                             callback({status: 'NOK', error: 'No auction scheduled in given room'});

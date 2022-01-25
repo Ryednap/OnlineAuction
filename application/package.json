@@ -26,7 +26,8 @@
     "socket.io-client": "^4.4.1",
     "string-kit": "^0.16.0",
     "terminal-image": "^2.0.0",
-    "terminal-kit": "^2.3.0"
+    "terminal-kit": "^2.3.0",
+    "winston": "^3.4.0"
   },
   "devDependencies": {
     "dotenv": "^11.0.0"

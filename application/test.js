@@ -1,17 +1,6 @@
-const {getRequest} = require('./api/apiReq');
+const logger = require('./utils/logger');
 
-function main () {
-    setInterval (async () => {
-        const data = await getRequest('/auction/list');
-        const body = await data.json();
-        console.log(body);
-    }, 1000);
-
-    setInterval (async () => {
-        const data = await getRequest('/auction/list');
-        const body = await data.json();
-        console.log(body);
-    }, 1000);
-}
-
-main ();
+logger.info.info('Information');
+logger.warn.warn('Warning');
+logger.error.error('Error');
+logger.debug.debug('Debugging');

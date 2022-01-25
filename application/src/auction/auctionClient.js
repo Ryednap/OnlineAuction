@@ -1,12 +1,18 @@
+'use strict';
+
 const {getRequest} = require('../../api/apiReq');
 const term = require('terminal-kit').terminal;
 const clear = require('clear');
 const inquirer = require('inquirer');
 const centerAlign = require('center-align');
 const colorette = require('colorette');
+const moment = require('moment');
 const clientIo = require('socket.io-client');
 const figlet = require("figlet");
-const {readCache} = require('../../utils/cache');
+
+
+const {readCacheData} = require('../../utils/cache');
+const logger = require('../../utils/logger');
 
 class AuctionClient {
     #id;
@@ -24,34 +30,34 @@ class AuctionClient {
 
     constructor(id) {
         this.#id = id;
-        readCache('user.bin').then(r => {
-            this.#userInfo = r;
-        }).catch(err => {
-            console.log(err);
-            process.exit(1);
-        });
-        getRequest("/auction/list/" + id).then(r => {
+        this.#intervalStack = [];
+        this.#userInfo = readCacheData("user");
+        this.doDummyProgress = this.doDummyProgress.bind(this);
+
+        getRequest("/auction/list/" + id).then(async r => {
+            r = await r.json();
+            logger.debug.debug('GET /auction/list\t' + JSON.stringify(r));
             this.#auctionData = r;
         }).catch(error => {
-            console.log(error);
+            logger.error.error('GET /auction/list/' + id + '\tLine:34 auctionClient.js\t' + error.message);
             process.exit(1);
         });
         // TODO move token to encrypted file as cache data
         this.#socket = clientIo('http://localhost:3000/auction', {
-            auth: {token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MWUzZDMwNTU2ZmM5OWNmNGIxNDk3NTgiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE2NDI2NTk5NjQsImV4cCI6MTY0Mjc0NjM2NH0.H8rTjEaxXTIZVhZ-T7z8d4ptOpxwjQW8g952LxVFX8A'},
+            auth: {token: readCacheData("token")},
             transports: ['websocket']
         });
         this.#socket.on('connect', () => {
-            console.log(`Connected to the server socket_id: ${this.#socket.id}`);
+            logger.info.info('WebSocket\t' + `Connected to the server socket_id: ${this.#socket.id} for auction_id : ${id}`);
             const engine = this.#socket.io.engine;
-            console.log(`Current transport means : ${engine.transport.name}`);
+            logger.info.info(`Current transport means : ${engine.transport.name}`);
 
             engine.once('upgrade', () => {
-                console.log(`Transport upgrade to : ${engine.transport.name}`);
+                logger.info.info(`Transport upgrade to : ${engine.transport.name}`);
             });
 
             engine.on('close', (reason  ) => {
-                console.log(`Connection closed Reason : ${reason}`);
+                logger.info.info(`Connection closed Reason : ${reason}`);
             });
         });
     }
@@ -60,6 +66,7 @@ class AuctionClient {
         clear();
         this.#serverAuctionTimer = this.auctionStatus.timer;
         const runInterval = setInterval (() => {
+            clear();
             const data = figlet.textSync(this.#auctionData.name, {
                 font: 'Standard',
                 horizontalLayout: 'fitted',
@@ -97,8 +104,8 @@ class AuctionClient {
                 const answer = this.#bidPrompt.ui.activePrompt.answers;
                 if (answer['option'] === 'bid') {
                     this.#socket.emit('bid', {
-                        userId: this.#userInfo.id,
-                        userName: this.#userInfo.name,
+                        userId: this.#userInfo._id,
+                        userName: this.#userInfo.userName,
                         currentPrice: this.state.highestBid.currentPrice + 50.0
                     });
                 } else {
@@ -122,6 +129,9 @@ class AuctionClient {
     wait () {
         clear();
         const waitInterval = setInterval(() => {
+            clear();
+            logger.debug.debug(`Auction data at the wait run: ${JSON.stringify(this.#auctionData)}`);
+            logger.debug.debug(`this at callback of wait: ${JSON.stringify(this)}`)
             const data = figlet.textSync(this.#auctionData.name, {
                 font: 'Standard',
                 horizontalLayout: 'fitted',
@@ -142,7 +152,7 @@ class AuctionClient {
                 colorette.yellowBright('\t' + new Date().toLocaleString() + '\t\t')
             );
             process.stdout.write(
-                colorette.yellowBright(this.#auctionData.startsAt + '\n')
+                colorette.yellowBright(moment(this.#auctionData.startsAt).format('YYYY-MM-DD hh:mm:ss') + '\n')
             );
         }, 1000);
         this.#intervalStack.push(waitInterval);
@@ -151,7 +161,7 @@ class AuctionClient {
         });
     }
 
-    #doDummyProgress() {
+    doDummyProgress() {
         this.progress += Math.random() / 10;
         this.progressBar.update(this.progress);
         if (this.progress >= 1) {
@@ -160,13 +170,15 @@ class AuctionClient {
                 this.auctionStatus === 'PEND' ? this.wait() : this.run();
             }, 200)
         } else {
-            setTimeout(this.#doDummyProgress, 100 + Math.random() * 400);
+            setTimeout(this.doDummyProgress, 100 + Math.random() * 400);
         }
     }
     main () {
         this.#socket.emit('join-room', this.#id, async (res) => {
             this.auctionStatus = res.status;
             this.state = res.state;
+            logger.debug.debug(`Received res from websocket: ${JSON.stringify(res)}`);
+            logger.debug.debug(`Current Auction state received: ${this.state}`);
             if (this.auctionStatus === 'NOK') {
                 // status NOK auction has ended
                 clear();
@@ -210,7 +222,7 @@ class AuctionClient {
                     titleStyle: term.bold.brightMagenta,
                     percentStyle: term.brightYellow
                 });
-                this.#doDummyProgress();
+                this.doDummyProgress();
             }
         });
 
@@ -226,5 +238,6 @@ class AuctionClient {
         this.#intervalStack = [];
     }
 }
+
 
 module.exports = AuctionClient;
