@@ -34,10 +34,7 @@ itemRouter.post('/api/add', async (req, res) => {
 
     itemModel.create(itemDoc).then((doc) => {
         const id = doc._id;
-        /**
-         * [Add the created Item in the user-Item relation model]
-         * @type {{itemId: mongoose.ObjectId, originalOwner: boolean, userId: mongoose.ObjectId}}
-         */
+
         const userItemRelationDoc = {
             userId: req.user._id,
             itemId: id,
@@ -45,9 +42,7 @@ itemRouter.post('/api/add', async (req, res) => {
         };
         userItemRelationModel.create(userItemRelationDoc).then(r => {
             const auctionId = req.body.auctionId;
-            /**
-             * [Now insert the created Item into the auction for the ID provided in request body]
-             */
+
             auctionModel.findOneAndUpdate(
                 {_id: auctionId},
                 {$addToSet: {

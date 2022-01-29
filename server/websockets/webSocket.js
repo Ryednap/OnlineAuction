@@ -12,6 +12,7 @@ module.exports = class WebSocket {
     #numClients;
     constructor(server) {
         const io = new Server(server);
+        // defining namespace
         this.#io = io.of('/auction');
         this.#numClients = 0;
         instrument(io, {auth: false});
@@ -36,16 +37,14 @@ module.exports = class WebSocket {
             console.log(`Connected with client : ${socket.id}`);
             console.log(`Total connected clients : ${this.#numClients}`);
 
+            // ROOM ID equivalent to AUCTION ID
             socket.on('join-room', (id, callback) => {
-                console.log('User is joining Room');
                 try {
                     socket.join(id);
                     console.log(`User : ${socket.id} joined the room`);
-                    console.log(`Currently running rooms : ${socket.rooms}`);
                     if (auctionScheduler.jobId === id) {
                         // auction is Running
                         const auctionOb = auctionScheduler.currentAuction;
-                        assert (auctionOb);
                         sleep.sleep(5); // wait for 5 seconds
                         callback({
                             status: 'OK',
@@ -54,30 +53,6 @@ module.exports = class WebSocket {
                                 timer: auctionOb.currentTimer,
                                 highestBid: auctionOb.highestBid,
                             }
-                        });
-
-                        auctionEmitter.on('item-listed', () => {
-                            this.#io.to(id).emit('update', {
-                                currentItemPosting: auctionOb.currentItem,
-                                timer: auctionOb.currentTimer,
-                                highestBid: auctionOb.highestBid
-                            });
-                        });
-
-                        auctionEmitter.on('bid-error', (args) => {
-                            this.#io.to(id).emit('error', args);
-                        });
-
-                        // TODO add validation for the bid data
-                        this.#io.on('bid', (bidData) => {
-                            auctionEmitter.emit('bid', bidData);
-                            // wait for some time
-                            sleep.sleep(5);
-                            this.#io.to(id).emit('update', {
-                                currentItemPosting: auctionOb.currentItem,
-                                timer: auctionOb.currentTimer,
-                                highestBid: auctionOb.highestBid
-                            });
                         });
                     } else {
                         // either not running or over
@@ -94,6 +69,38 @@ module.exports = class WebSocket {
                             });
                         }
                     }
+
+                // Emitters and Listeners
+                    auctionEmitter.on('item-listed', () => {
+                        const auctionOb = auctionScheduler.currentAuction;
+                        this.#io.to(id).emit('update', {
+                            currentItemPosting: auctionOb.currentItem,
+                            timer: auctionOb.currentTimer,
+                            highestBid: auctionOb.highestBid
+                        });
+                    });
+
+                    auctionEmitter.on('bid-error', (args) => {
+                        this.#io.to(id).emit('error', args);
+                    });
+
+                    auctionEmitter.on('On-complete', () => {
+                       this.#io.to(id).emit('On-complete');
+                    });
+
+                    // TODO add validation for the bid data
+                    socket.on('bid', (bidData) => {
+                        console.log(`Bid recived ${bidData}`);
+                        auctionEmitter.emit('bid', bidData);
+                        // wait for some time
+                        sleep.sleep(5);
+                        const auctionOb = auctionScheduler.currentAuction;
+                        this.#io.to(id).emit('update', {
+                            currentItemPosting: auctionOb.currentItem,
+                            timer: auctionOb.currentTimer,
+                            highestBid: auctionOb.highestBid
+                        });
+                    });
 
                 } catch (error) {
                     console.log(error);

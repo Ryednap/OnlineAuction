@@ -11,9 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "boxen": "^6.2.1",
     "center-align": "^1.0.1",
     "clear": "^0.1.0",
+    "cli-box": "^6.0.10",
     "colorette": "^2.0.16",
     "cryptr": "^6.0.2",
     "figlet": "^1.5.2",

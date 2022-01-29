@@ -9,7 +9,7 @@ const colorette = require('colorette');
 const moment = require('moment');
 const clientIo = require('socket.io-client');
 const figlet = require("figlet");
-
+const Box = require('cli-box');
 
 const {readCacheData} = require('../../utils/cache');
 const logger = require('../../utils/logger');
@@ -62,6 +62,21 @@ class AuctionClient {
         });
     }
 
+
+    /**
+     * Generates Auction RunTime text about product put up on display
+     * @returns {string}
+     */
+    #generateText () {
+        return `${colorette.bold(colorette.blueBright(this.state.currentItemPosting.name + '\n'))}
+        ${colorette.italic(colorette.magentaBright(this.state.currentItemPosting.description + '\n'))}
+        ▸ ${colorette.redBright('Base Price:  ') + colorette.greenBright(this.state.currentItemPosting.basePrice)}
+        ▸ ${colorette.redBright('Current Price:  ') + colorette.greenBright((this.state.highestBid.currentPrice))}
+        ▸ ${colorette.redBright('Highest Bidder   ') + colorette.greenBright(this.state.highestBid.userName ? this.state.highestBid.userName : '-' + '\n')}
+        ${colorette.bold(colorette.yellowBright(this.#serverAuctionTimer--))}`;
+    }
+
+
     run () {
         clear();
         this.#serverAuctionTimer = this.auctionStatus.timer;
@@ -77,37 +92,39 @@ class AuctionClient {
                 colorette.bold(colorette.blueBright(data + "\n\n")),
                 80
             ));
+            logger.debug.debug(JSON.stringify(this.state));
+            logger.debug.debug(JSON.stringify(this.state.currentItemPosting));
 
-            console.log(centerAlign(
-                colorette.bold(colorette.magentaBright(this.state.currentItemPosting.name + '\n'))
-            , 80));
-            console.log(centerAlign(
-                colorette.italic(colorette.greenBright(this.state.currentItemPosting.description + '\n'))
-            ), 80);
-            console.log(centerAlign(
-                colorette.redBright('Base Price:  ') +
-                colorette.greenBright(this.state.state.basePrice)
-            ), 80);
-            console.log(centerAlign(
-                colorette.redBright('Current Price:  ') +
-                colorette.greenBright((this.state.highestBid.currentPrice))
-            ), 80);
-            console.log(centerAlign(
-                colorette.redBright('Highest Bidder   ') +
-                colorette.greenBright(this.state.highestBid.userName)
-            ), 80);
-            console.log(centerAlign(
-                colorette.bold(colorette.yellowBright(this.#serverAuctionTimer--))
-            ));
+            const myBox = new Box({
+                w: 50,
+                h: 10,
+                stringify: false,
+                marks: {
+                    nw: '╭',
+                    n: '─',
+                    ne: '╮',
+                    e: '│',
+                    se: '╯',
+                    s: '─',
+                    sw: '╰',
+                    w: '│'
+                },
+                hAlign: 'middle',
+                vAlign: 'middle'
+            }, this.#generateText());
+
+            console.log(myBox.stringify());
 
             if (this.#bidPrompt && this.#bidPrompt.ui.activePrompt.status === 'answered') {
                 const answer = this.#bidPrompt.ui.activePrompt.answers;
                 if (answer['option'] === 'bid') {
+                    logger.info.info('Emitting Bid data to the server');
                     this.#socket.emit('bid', {
                         userId: this.#userInfo._id,
                         userName: this.#userInfo.userName,
                         currentPrice: this.state.highestBid.currentPrice + 50.0
                     });
+
                 } else {
                     this.#destroy();
                     // TODO go back instead of process close
@@ -123,9 +140,13 @@ class AuctionClient {
             this.state = state;
         });
 
+        this.#socket.on('On-complete', async () => {
+            await this.onComplete();
+        });
+
         this.#intervalStack.push(runInterval);
     }
-
+// TODO: redundant code
     wait () {
         clear();
         const waitInterval = setInterval(() => {
@@ -152,13 +173,53 @@ class AuctionClient {
                 colorette.yellowBright('\t' + new Date().toLocaleString() + '\t\t')
             );
             process.stdout.write(
-                colorette.yellowBright(moment(this.#auctionData.startsAt).format('YYYY-MM-DD hh:mm:ss') + '\n')
+                colorette.yellowBright(moment(this.#auctionData.startsAt).format('YYYY-MM-DD HH:mm:ss') + '\n')
             );
         }, 1000);
         this.#intervalStack.push(waitInterval);
-        this.#socket.once('update', () => {
+
+        // Currently, when we are waiting and receive update from server
+        // then this action is performed exactly once
+        // remove the current interval and start the run Event.
+        this.#socket.once('update', (state) => {
             clearInterval(waitInterval);
+            this.#serverAuctionTimer = state.timer;
+            this.state = state;
+            this.run();
         });
+    }
+
+    async onComplete() {
+        clear();
+        await term.slowTyping('Sorry The auction has ended !!!', {
+            flashStyle: term.brightWhite,
+            delay: 100,
+            style: term.brightRed
+        });
+        let quitPrompt = undefined;
+        const timerInterval = setInterval (() => {
+            clear();
+            console.log(
+                centerAlign(
+                    colorette.bold(colorette.italic(colorette.magenta(
+                        'Sorry The auction has ended !!!'
+                    ))), process.stdout.columns / 2.0 + 10
+                )
+            )
+            console.log(
+                centerAlign(
+                    colorette.bold(colorette.greenBright(new Date().toLocaleString()))
+                    , process.stdout.columns / 2.0
+                )
+            );
+            if (quitPrompt && quitPrompt.ui.activePrompt.status === 'answered') {
+                this.#destroy();
+            } else if (quitPrompt) quitPrompt.ui.close();
+            if (!quitPrompt || quitPrompt.ui.activePrompt.status !== 'answered')
+                quitPrompt = inquirer.prompt({type: 'list', name: 'option', message: '\n', choices: ['quit']});
+
+        }, 1000);
+        this.#intervalStack.push(timerInterval);
     }
 
     doDummyProgress() {
@@ -170,7 +231,7 @@ class AuctionClient {
                 this.auctionStatus === 'PEND' ? this.wait() : this.run();
             }, 200)
         } else {
-            setTimeout(this.doDummyProgress, 100 + Math.random() * 400);
+            setTimeout(this.doDummyProgress, 100 + Math.random() * 100);
         }
     }
     main () {
@@ -181,37 +242,7 @@ class AuctionClient {
             logger.debug.debug(`Current Auction state received: ${this.state}`);
             if (this.auctionStatus === 'NOK') {
                 // status NOK auction has ended
-                clear();
-                await term.slowTyping('Sorry The auction has ended !!!', {
-                    flashStyle: term.brightWhite,
-                    delay: 100,
-                    style: term.brightRed
-                });
-                let quitPrompt = undefined;
-                const timerInterval = setInterval (() => {
-                    clear();
-                    console.log(
-                        centerAlign(
-                            colorette.bold(colorette.italic(colorette.magenta(
-                                'Sorry The auction has ended !!!'
-                            ))), process.stdout.columns / 2.0 + 10
-                        )
-                    )
-                    console.log(
-                        centerAlign(
-                            colorette.bold(colorette.greenBright(new Date().toLocaleString()))
-                            , process.stdout.columns / 2.0
-                        )
-                    );
-                    if (quitPrompt && quitPrompt.ui.activePrompt.status === 'answered') {
-                        this.#destroy();
-                    } else if (quitPrompt) quitPrompt.ui.close();
-                    if (!quitPrompt || quitPrompt.ui.activePrompt.status !== 'answered')
-                        quitPrompt = inquirer.prompt({type: 'list', name: 'option', message: '\n', choices: ['quit']});
-
-                }, 1000);
-                this.#intervalStack.push(timerInterval);
-
+                await this.onComplete();
             } else {
                 clear();
                 this.progressBar = term.progressBar({
@@ -226,10 +257,6 @@ class AuctionClient {
             }
         });
 
-        // listen for the item posting update
-        this.#socket.on('update', (item) => {
-
-        });
     }
     #destroy () {
         this.#intervalStack.forEach((interval) => {

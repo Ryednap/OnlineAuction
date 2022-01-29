@@ -84,6 +84,7 @@ class Auction {
      */
     async #postTransactionProcess () {
         try {
+            if (!this.#currentBid.userId) return;
             const userItemRelation = await userItemRelationModel.findOneAndDelete({itemId: this.#currentItemPosting.id});
             const transaction = {
                 seller: userItemRelation.userId,
@@ -118,7 +119,7 @@ class Auction {
 
     #timerRun () {
         console.log(this.#timer);
-        this.#timer-=10;
+        this.#timer--;
         if (this.#timer <= 0) auctionEmitter.emit('next-item');
     }
 
@@ -130,11 +131,13 @@ class Auction {
         let timerJob = cron.scheduleJob('* * * * * *', () => {this.#timerRun();});
         auctionEmitter.on('bid', (userBidData) => {
             console.log(`Received Bid ${userBidData}`);
+            timerJob.cancel(true);
             this.#timer = 30;
             if (this.#currentBid.currentPrice > userBidData.currentPrice) {
                 auctionEmitter.emit('bid-error', 'Bid Price less than current Price');
             }
             this.#currentBid = userBidData;
+            timerJob.reschedule('* * * * * *', () => {this.#timerRun();});
         });
         auctionEmitter.on('next-item', () => {
             console.log('posting next item');
@@ -162,14 +165,15 @@ class Auction {
 
                     // Initially set current Bid object to dummy variable
                     this.#currentBid = {
-                        userId: '-',
-                        userName: '-',
+                        userId: null,
+                        userName: null,
                         currentPrice: this.#currentItemPosting.basePrice,
                     };
                     timerJob = cron.scheduleJob('* * * * * *', () => {this.#timerRun();});
                     auctionEmitter.emit('item-listed');
                 }, 1000);
             } else {
+                console.log('Length of the item: ' + itemList.length);
                 this.destroy();
             }
         });
@@ -233,7 +237,7 @@ class AuctionScheduler {
     }
 
     scheduleAuction (scheduleTime) {
-        console.log('Scheduling Auction');
+        console.log(`Scheduled Auction will start at ${parseCron(scheduleTime.startsAt)}`)
         const job = cron.scheduleJob(parseCron(scheduleTime.startsAt), () => {
             console.log('Scheduled Auction is starting');
             this.#runAuction(scheduleTime.id);
@@ -247,7 +251,6 @@ class AuctionScheduler {
     }
 
     getScheduledAuctionDetail (id) {
-        console.log(`length : ${this.#jobList.length} given Id : ${id}`);
         let jobDetail = {};
         this.#jobList.forEach(job => {
             console.log(job.id);

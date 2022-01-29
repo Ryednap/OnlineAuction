@@ -45,8 +45,8 @@ auctionRouter.post('/api/add', async (req, res) => {
     const auctionDoc = {
         _id: id,
         name: req.body.name,
-        startsAt: moment(req.body.startsAt).format('YYYY-MM-DD hh:mm:ss'),
-        endsAt: moment(req.body.endsAt).format('YYYY-MM-DD hh:mm:ss'),
+        startsAt: moment(req.body.startsAt).format('YYYY-MM-DD HH:mm:ss'),
+        endsAt: moment(req.body.endsAt).format('YYYY-MM-DD HH:mm:ss'),
         auctionCharge: req.body.charge,
         itemListing: []
     };
@@ -55,16 +55,17 @@ auctionRouter.post('/api/add', async (req, res) => {
     try {
         const lhs = await auctionModel.find({
             startsAt: {
-                $gte: moment(req.body.startsAt).format('YYYY-MM-DD hh:mm:ss'),
-                $lte: moment(req.body.endsAt).format('YYYY-MM-DD hh:mm:ss'),
+                $gte: moment(req.body.startsAt).format('YYYY-MM-DD HH:mm:ss'),
+                $lte: moment(req.body.endsAt).format('YYYY-MM-DD HH:mm:ss'),
             }
         });
         const rhs = await auctionModel.find({
             endsAt: {
-                $gte: moment(req.body.startsAt).format('YYYY-MM-DD hh:mm:ss'),
-                $lte: moment(req.body.startsAt).format('YYYY-MM-DD hh:mm:ss'),
+                $gte: moment(req.body.startsAt).format('YYYY-MM-DD HH:mm:ss'),
+                $lte: moment(req.body.startsAt).format('YYYY-MM-DD HH:mm:ss'),
             }
         });
+        console.log(lhs, rhs);
         if (lhs.length || rhs.length) {
             return res.status(400).json({
                 message: 'Schedule class : One auction already scheduled during the period'
@@ -79,8 +80,8 @@ auctionRouter.post('/api/add', async (req, res) => {
     auctionModel.create(auctionDoc).then((status) => {
         auctionScheduler.scheduleAuction({
             id: auctionDoc._id,
-            startsAt: moment(auctionDoc.startsAt).format('YYYY-MM-DD hh:mm:ss'),
-            endsAt: moment(auctionDoc.endsAt).format('YYYY-MM-DD hh:mm:ss')
+            startsAt: moment(auctionDoc.startsAt).format('YYYY-MM-DD HH:mm:ss'),
+            endsAt: moment(auctionDoc.endsAt).format('YYYY-MM-DD HH:mm:ss')
         });
         res.status(200).json({});
     }).catch((error) => {
