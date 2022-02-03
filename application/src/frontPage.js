@@ -1,3 +1,10 @@
+/**
+ * FrontPage for the application. This module is by default
+ * the first Screen and is always present inside the applicationStack
+ * The Screen allows user's to choose one of the option to login, SignUp or quit
+ * @module FrontPage
+ */
+
 'use strict';
 
 const inquirer = require('inquirer');
@@ -6,18 +13,40 @@ const figlet = require('figlet');
 const centerAlign = require('center-align');
 const clear = require('clear');
 
+const ApplicationManager = require('./applicationStack');
+const EntryManager = require("./entryManager");
 
-const question = [
-    {
-        type: 'list',
-        name: 'option',
-        message: colorette.whiteBright('Please Select option\n'),
-        choices: ['Signin', 'Signup', 'Exit']
+class FrontPage {
+    /**
+     * Question parameter to be use to inquire user through inquirer.js
+     * @type {[{name: string, type: string, message: *, choices: string[]}]}
+     */
+    #question = [
+        {
+            type: 'list',
+            name: 'option',
+            message: colorette.whiteBright('Please Select option\n'),
+            choices: ['Signin', 'Signup', 'Exit']
+        }
+    ]
+
+    /**
+     * Pushes the current context into ApplicationManager
+     * @constructor
+     */
+    constructor() {
+        ApplicationManager.forward(this, 1e-10);
+        this.start = this.start.bind(this);
+        this.toString = this.toString.bind(this);
+        this.destroy = this.destroy.bind(this);
     }
-]
 
-async function frontPageDrawer() {
-    try {
+    /**
+     * start function for the class
+     * @access public
+     * @returns {Promise<void>}
+     */
+    async start () {
         clear();
         const data = figlet.textSync('GENKO AUCTION', {
             font: 'Standard',
@@ -37,12 +66,18 @@ async function frontPageDrawer() {
             centerAlign(colorette.redBright('Sell More, Buy Better!!\n\n\n'), 95)
         );
 
-        return await inquirer.prompt(question);
-
-    } catch (error) {
-        console.log(error);
-        process.exit(1);
+        const answer = await inquirer.prompt(this.#question);
+        if (answer['option'] === 'Exit') {
+            await ApplicationManager.back();
+        } else {
+            const entry = new EntryManager();
+            await ApplicationManager.forward(entry, 1, answer['option']);
+        }
     }
+    toString() {
+        return 'FrontPage';
+    }
+    destroy () {}
 }
 
-module.exports = frontPageDrawer
+module.exports = FrontPage;

@@ -15,6 +15,7 @@ const moment = require('moment');
 // module import
 const { getRequest } = require('../../api/apiReq');
 const auctionClient = require('./auctionClient');
+const ApplicationManager = require("../applicationStack");
 
 class AuctionMenu {
     #intervalStack;
@@ -62,7 +63,7 @@ class AuctionMenu {
             ar.pop(); ar.pop();
             table.push(ar);
         });
-        questionChoices.push('Exit');
+        questionChoices.push('Back');
         await term.table(table, {
             hasBorder: true,
             contentHasMarkup: true,
@@ -91,14 +92,14 @@ class AuctionMenu {
             await this.renderCallback();
         }, 5000);
 
-        const answerInterval = setInterval(() => {
+        const answerInterval = setInterval(async () => {
             if (this.#promptEvent && this.#promptEvent.ui.activePrompt.status === 'answered') {
                 const answer = this.#promptEvent.ui.activePrompt.answers;
                 this.#promptEvent.ui.close();
                 this.destroy();
                 const which = answer['auctionOption'];
-                if (which === 'Exit') {
-                    process.exit(0);
+                if (which === 'Back') {
+                    await ApplicationManager.back();
                 }
                 const id = which.split(':')[0].trim();
                 // TODO : add check for expiry of auction
@@ -109,8 +110,8 @@ class AuctionMenu {
 
         this.#intervalStack.push(tableInterval, answerInterval);
     }
-    start() {
-        this.render();
+    async start() {
+        await this.render();
     }
     destroy() {
         this.#intervalStack.forEach(interval => clearInterval(interval));

@@ -1,17 +1,16 @@
 'use strict';
 
 require('dotenv').config()
-const frontPageDrawer = require('./frontPage');
-const { Signin, Signup } = require('./entry');
 
+const FrontPage = require('./frontPage');
+
+
+/**
+ * Main Function for Running the application
+ * @returns {Promise<void>}
+ */
 async function main() {
-    const answer = await frontPageDrawer();
-    switch (answer['option']) {
-        case 'Signin': await Signin(); break;
-        case 'Signup': await Signup(); break;
-        case 'Exit': process.exit(0); break;
-        default: console.log('none matched');
-    }
+    new FrontPage();
 }
 
 module.exports = main;
