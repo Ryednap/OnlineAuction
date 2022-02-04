@@ -4,10 +4,13 @@ const inquirer = require('inquirer');
 const colorette = require('colorette');
 const clear = require('clear');
 const centerAlign = require('center-align');
+const ApplicationManager = require("../applicationManager");
+const AuctionManagement = require("./AuctionManagement");
+const DeleteAccount = require("./deleteAccount");
 
 const choiceList = [
     'Change User Details',
-    'Conduct Auction',
+    'Manage Auction',
     'Delete account',
     'Exit'
 ];
@@ -28,7 +31,7 @@ module.exports = class Settings {
     }
     start() {
         let count = 0;
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
             clear();
             console.log(centerAlign(
                 colorette.bold(colorette.yellowBright(new Date().toLocaleString() + '\n\n')),
@@ -36,21 +39,21 @@ module.exports = class Settings {
             ));
 
             if (this.#optionPrompt) {
-                if (this.#optionPrompt.ui.activePrompt.status === 'answered') {
+                if (this.#optionPrompt.ui.activePrompt.status === 'answered') {z``
                     const answer = this.#optionPrompt.ui.activePrompt.answers;
                     switch (answer['option']) {
                         case choiceList[0] :
                             console.log(`Selected option 1`);
                             break;
                         case choiceList[1] :
-                            console.log(`Selected option 2`);
+                            await ApplicationManager.forward(new AuctionManagement(), 10);
                             break;
                         case choiceList[2] :
-                            console.log('Selected option 3');
+                            await ApplicationManager.forward(new DeleteAccount(), 10);
                             break;
                         case choiceList[3] : {
-                            this.destroy();
-                            return;
+                            await ApplicationManager.back();
+                            break;
                         }
                         default:
                             console.log('Something Went Wrong Exiting....');

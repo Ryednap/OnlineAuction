@@ -32,6 +32,11 @@ module.exports = class WebSocket {
             }
         });
 
+        /**
+         *
+         * @method
+         * @fires On-complete
+         */
         this.#io.on('connection', (socket) => {
             this.#numClients++;
             console.log(`Connected with client : ${socket.id}`);
@@ -84,17 +89,29 @@ module.exports = class WebSocket {
                         this.#io.to(id).emit('error', args);
                     });
 
+                    /**
+                     * @event On-complete
+                     */
                     auctionEmitter.on('On-complete', () => {
                        this.#io.to(id).emit('On-complete');
                     });
 
                     // TODO add validation for the bid data
+
+                    /**
+                     * @method
+                     * @fires update
+                     */
                     socket.on('bid', (bidData) => {
                         console.log(`Bid recived ${bidData}`);
                         auctionEmitter.emit('bid', bidData);
                         // wait for some time
                         sleep.sleep(5);
                         const auctionOb = auctionScheduler.currentAuction;
+
+                        /**
+                         * @event update
+                         */
                         this.#io.to(id).emit('update', {
                             currentItemPosting: auctionOb.currentItem,
                             timer: auctionOb.currentTimer,

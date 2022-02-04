@@ -4,6 +4,7 @@
 const logger = require('../utils/logger');
 const ProgressBar = require("../utils/progressBar");
 const {terminal: term} = require('terminal-kit');
+const assert = require("assert");
 
 /**
  * A single Unit Object with arguments and it's current State in
@@ -48,36 +49,39 @@ UnitModule.prototype.toString = function () {
  * @classdesc Manages Application Route by building a stack and running the Module on top of stack
  */
 
-class ApplicationManager {
+class ApplicationManager{
     static #runStack = [];
-
     /**
      * @function : runApp
      * @access private
      * Runs the UnitModule that is top of the runStack by calling the
      * UnitModule object `start()` returns the returned result after running.
-     * @returns {Promise<any>}
      */
     static #runApp () {
-        const element = ApplicationManager.#runStack[ApplicationManager.#runStack.length - 1];
-        ApplicationManager.#runStack[ApplicationManager.#runStack.length - 1]
-            .changeState('Running');
+        let element = ApplicationManager.#runStack[ApplicationManager.#runStack.length - 1];
+        if (element.state === 'Paused') {
+            ApplicationManager.#runStack[ApplicationManager.#runStack.length - 1]
+                .changeState('Running');
+            element.object = new element.object.constructor();
+            element.object.start(...element.args);
 
-        const progressBar = new ProgressBar(element.object, element.args, element.delay);
-        progressBar.run({
-            width: 100,
-            title: '\n\n\t\tLOADING\t\t',
-            eta: true,
-            percent: true,
-            titleStyle: term.bold.brightRed,
-            barStyle: term.brightGreen
-        });
-        return new Promise (async (resolve, reject) => {
-           progressBar.once('return', (returnValue) => {
-               resolve(returnValue);
-           });
-           progressBar.once('error', (error) => reject(error));
-        });
+        } else if (element.state === 'Pending') {
+            ApplicationManager.#runStack[ApplicationManager.#runStack.length - 1]
+                .changeState('Running');
+
+            const progressBar = new ProgressBar(element.object, element.args, element.delay);
+            progressBar.run({
+                width: 100,
+                title: '\n\n\t\tLOADING\t\t',
+                eta: true,
+                percent: true,
+                titleStyle: term.bold.brightRed,
+                barStyle: term.brightGreen
+            });
+        } else {
+            assert (false);
+        }
+
     }
 
     /**
@@ -93,11 +97,16 @@ class ApplicationManager {
      * @return {Promise<any>}
      */
     static #push(object, delay, ...args) {
+        if (ApplicationManager.#runStack.length) {
+            ApplicationManager.#runStack[ApplicationManager.#runStack.length - 1]
+                .changeState('Paused');
+        }
+
         const element = new UnitModule(object, args, 'Pending', delay);
         ApplicationManager.#runStack.push(element);
         logger.info.info(`Pushed ${element} into application stack`);
         logger.debug.debug(`Current Length:${ApplicationManager.#runStack.length}`);
-        return ApplicationManager.#runApp();
+        ApplicationManager.#runApp();
     }
 
 
@@ -116,7 +125,7 @@ class ApplicationManager {
         logger.info.info(`Popped ${element} from stack`);
         logger.debug.debug(`Current Length:${ApplicationManager.#runStack.length}`);
         if(ApplicationManager.#runStack.length === 0) process.exit(0);
-        return ApplicationManager.#runApp();
+        ApplicationManager.#runApp();
     }
 
     /**
@@ -133,7 +142,7 @@ class ApplicationManager {
     static forward(object, delay ,...args) {
         logger.debug.debug(`forward ${delay}`);
         logger.debug.debug(`args ${args}`);
-        return this.#push(object, delay, ...args);
+        this.#push(object, delay, ...args);
     }
 
     /**
@@ -144,7 +153,7 @@ class ApplicationManager {
      * @returns {Promise<any>}
      */
     static back() {
-        return this.#pop();
+        this.#pop();
     }
 }
 

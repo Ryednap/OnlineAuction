@@ -13,7 +13,7 @@ const figlet = require('figlet');
 const centerAlign = require('center-align');
 const clear = require('clear');
 
-const ApplicationManager = require('./applicationStack');
+const ApplicationManager = require('./applicationManager');
 const EntryManager = require("./entryManager");
 
 class FrontPage {
@@ -31,11 +31,10 @@ class FrontPage {
     ]
 
     /**
-     * Pushes the current context into ApplicationManager
+     * Binds the method function to current context
      * @constructor
      */
     constructor() {
-        ApplicationManager.forward(this, 1e-10);
         this.start = this.start.bind(this);
         this.toString = this.toString.bind(this);
         this.destroy = this.destroy.bind(this);

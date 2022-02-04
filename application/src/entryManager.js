@@ -10,7 +10,7 @@ const {terminal: term} = require("terminal-kit");
 const { postRequest, getRequest} = require('../api/apiReq');
 const { writeCacheData } = require('../utils/cache');
 const logger = require("../utils/logger");
-const ApplicationManager = require("./applicationStack");
+const ApplicationManager = require("./applicationManager");
 const MainMenu = require('./home/mainMenu');
 
 

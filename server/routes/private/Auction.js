@@ -83,7 +83,7 @@ auctionRouter.post('/api/add', async (req, res) => {
             startsAt: moment(auctionDoc.startsAt).format('YYYY-MM-DD HH:mm:ss'),
             endsAt: moment(auctionDoc.endsAt).format('YYYY-MM-DD HH:mm:ss')
         });
-        res.status(200).json({});
+        res.status(200).json({id: auctionDoc._id});
     }).catch((error) => {
         console.log(error);
         res.status(500).json({
@@ -91,6 +91,35 @@ auctionRouter.post('/api/add', async (req, res) => {
             error: error
         });
     });
+});
+
+auctionRouter.patch('/api/update/:id', (req, res) => {
+    const auctionId = req.params.id;
+    const newDetails = req.body.details;
+    auctionModel.findOneAndUpdate({_id: auctionId}, newDetails).then(r => {
+        if (r.acknowledged) return res.status(200).json ({message: 'Updated '});
+        return res.status(404).json({message: 'Error updating details invalid id'});
+    }).catch(err => {
+        res.status(500).json({
+            message: 'Internal server error'
+        });
+    });
+});
+
+auctionRouter.delete('/api/delete/:id', (req,res) => {
+    const auctionId = req.params.id;
+    auctionModel.findOneAndDelete({_id : auctionId}).then(r => {
+        if (r.acknowledged) return res.status(200).json({
+            message: 'Deleted',
+            doc: r
+        });
+        return res.status(404).json({message: 'Error deleting details invalid id'});
+
+    }).catch (err => {
+        return res.status(500).json({
+            message: 'Internal Server error'
+        });
+    })
 });
 
 module.exports = auctionRouter;

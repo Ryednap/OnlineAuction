@@ -3,6 +3,7 @@
 require('dotenv').config()
 
 const FrontPage = require('./frontPage');
+const ApplicationManager = require("./applicationManager");
 
 
 /**
@@ -10,7 +11,7 @@ const FrontPage = require('./frontPage');
  * @returns {Promise<void>}
  */
 async function main() {
-    new FrontPage();
+    await ApplicationManager.forward(new FrontPage(), 1e-10);
 }
 
 module.exports = main;
